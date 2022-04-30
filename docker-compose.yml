@@ -1,0 +1,57 @@
+version: '3.8'
+services:
+  mongodb_1:
+    container_name: mongodb_1
+    image: mongo:4.4
+    volumes:
+      - "local_mongodb_data_1:/data/db"
+    networks:
+      - mongodb-rs-network
+    ports:
+      - 27021:27021
+    links:
+      - mongodb_2
+      - mongodb_3
+    restart: on-failure
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--port", "27021", "--replSet", "rs0" ]
+  mongodb_2:
+    container_name: mongodb_2
+    image: mongo:4.4
+    volumes:
+      - "local_mongodb_data_2:/data/db"
+    networks:
+      - mongodb-rs-network
+    ports:
+      - 27022:27022
+    restart: on-failure
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--port", "27022", "--replSet", "rs0" ]
+  mongodb_3:
+    container_name: mongodb_3
+    image: mongo:4.4
+    volumes:
+      - "local_mongodb_data_3:/data/db"
+    networks:
+      - mongodb-rs-network
+    ports:
+      - 27023:27023
+    restart: on-failure
+    entrypoint: [ "/usr/bin/mongod", "--bind_ip_all", "--port", "27023", "--replSet", "rs0" ]
+  mongodb_rs_init:
+    container_name: mongodb_rs_init
+    image: mongo:4.4
+    networks:
+      - mongodb-rs-network
+    command: [ "/usr/bin/mongo", "--host", "mongodb_1", "--port", "27021", "--eval", "rs.initiate({\"_id\":\"rs0\",\"version\":1,\"members\":[{\"_id\":1,\"host\":\"mongodb_1:27021\",\"priority\":3},{\"_id\":2,\"host\":\"mongodb_2:27022\",\"priority\":2},{\"_id\":3,\"host\":\"mongodb_3:27023\",\"priority\":1}]},{force:true});" ]
+    depends_on:
+      - mongodb_1
+      - mongodb_2
+      - mongodb_3
+    links:
+      - mongodb_1
+
+networks:
+  mongodb-rs-network:
+volumes:
+  local_mongodb_data_1:
+  local_mongodb_data_2:
+  local_mongodb_data_3:
